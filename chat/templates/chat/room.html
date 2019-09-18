@@ -1,46 +1,146 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8"/>
-    <title>Chat Room</title>
-</head>
-<body>
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-5">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <span class="glyphicon glyphicon-comment"></span> Chat
+                </div>
+                <div class="panel-body" id="all_messages">
+                    <ul class="chat">
+                        {% if user.is_authenticated %}
+                            {% for message in chat_messages %}
+                                {% if message.user == user %}
+                                    <li class="right clearfix">
+                                    <span class="chat-img pull-right">
+                                        <img src="http://placehold.it/50/FA6F57/fff&text=ME" alt="User Avatar"
+                                             class="img-circle"/>
+                                    </span>
+                                        <div class="chat-body clearfix">
+                                            <div class="header">
+                                                <small class="text-muted"><span class="glyphicon glyphicon-time"></span>
+                                                    {{ message.created|date:"H:i" }}
+                                                </small>
+                                                <strong class="pull-right primary-font">{{ message.user }}</strong>
+                                            </div>
+                                            <p>
+                                                {{ message.message|safe }}
+                                            </p>
+                                        </div>
+                                    </li>
+                                {% else %}
+                                    <li class="left clearfix">
+                                    <span class="chat-img pull-left">
+                                        <img src="http://placehold.it/50/55C1E7/fff&text=U" alt="User Avatar"
+                                             class="img-circle"/>
+                                    </span>
+                                        <div class="chat-body clearfix">
+                                            <div class="header">
+                                                <strong class="primary-font">{{ message.user }}</strong>
+                                                <small class="pull-right text-muted">
+                                                    <span class="glyphicon glyphicon-time"></span>{{ message.created|date:"H:i" }}
+                                                </small>
+                                            </div>
+                                            <p>
+                                                {{ message.message|safe }}
+                                            </p>
+                                        </div>
+                                    </li>
+                                {% endif %}
+                            {% empty %}
+
+                            {% endfor %}
+                        {% else %}
+                            <div>로그인 필요</div>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="panel-footer">
+                    <div class="input-group">
+                        <input type="text" id="chat-message-input" class="form-control input-sm"
+                               placeholder="여기에 입력하세요"/>
+                        <span class="input-group-btn">
+                            <button id="chat-message-submit" class="btn btn-warning btn-sm">
+                                전송
+                            </button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!---
     <textarea id="chat-log" cols="100" rows="20"></textarea><br/>
     <input id="chat-message-input" type="text" size="100"/><br/>
     <input id="chat-message-submit" type="button" value="Send"/>
-</body>
-<script>
-    var roomName = {{ room_name_json }};
+    -->
+{% endblock %}
 
-    var chatSocket = new WebSocket(
-        'ws://' + window.location.host +
-        '/ws/chat/' + roomName + '/');
+{% block js %}
+    <script type=text/javascript src="{% static 'reconnecting-websocket.min.js' %}"></script>
+    <script>
+        $('#all_messages').scrollTop($('#all_messages')[0].scrollHeight);
+        var roomName = '{{ room_name }}';
 
-    chatSocket.onmessage = function(e) {
-        var data = JSON.parse(e.data);
-        var message = data['message'];
-        document.querySelector('#chat-log').value += (message + '\n');
-    };
+        var ws_scheme = window.location.protocol === "https:" ? 'wss' : 'ws';
+        var websocket_str = ws_scheme + '://' + window.location.host + '/ws/chat/' + roomName + '/';
+        var chatSocket = new ReconnectingWebSocket(websocket_str);
 
-    chatSocket.onclose = function(e) {
-        console.error('Chat socket closed unexpectedly');
-    };
+        {#var chatSocket = new WebSocket(#}
+        {#    'ws://' + window.location.host +#}
+        {#    '/ws/chat/' + roomName + '/');#}
 
-    document.querySelector('#chat-message-input').focus();
-    document.querySelector('#chat-message-input').onkeyup = function(e) {
-        if (e.keyCode === 13) {  // enter, return
-            document.querySelector('#chat-message-submit').click();
-        }
-    };
+        chatSocket.onmessage = function (e) {
+            var data = JSON.parse(e.data);
+            var message = data['message'];
+            var now_time = data['now_time'];
+            var receive_user = data['user'];
+            var user = "{{ user }}";
+            if (receive_user === user) {
+                $('<li class="right clearfix"><span class="chat-img pull-right">' +
+                    '<img src="http://placehold.it/50/FA6F57/fff&text=ME" alt="User Avatar" class="img-circle"/></span>' +
+                    '<div class="chat-body clearfix"><div class="header"><small class=" text-muted"><span class="glyphicon glyphicon-time"></span>' + now_time + '</small><strong class="pull-right primary-font">' + user + '</strong></div><p>' + message + '</p></div></li>').appendTo($('.chat'))
+            } else {
+                $('<li class="left clearfix">' +
+                    '<span class="chat-img pull-left">' +
+                    '<img src="http://placehold.it/50/55C1E7/fff&text=U" alt="User Avatar" class="img-circle"/>' +
+                    '</span>' +
+                    '<div class="chat-body clearfix">' +
+                    '<div class="header">' +
+                    '<strong class="primary-font">' + receive_user + '</strong>' +
+                    '<small class="pull-right text-muted"><span class="glyphicon glyphicon-time"></span>' + now_time + '</small>' +
+                    '</div>' +
+                    '<p>' + message + '</p>' +
+                    '</div>' +
+                    '</li>').appendTo($('.chat'))
+            }
+            $('#all_messages').scrollTop($('#all_messages')[0].scrollHeight);
+            //document.querySelector('#chat-log').value += (message + '\n');
+        };
 
-    document.querySelector('#chat-message-submit').onclick = function(e) {
-        var messageInputDom = document.querySelector('#chat-message-input');
-        var message = messageInputDom.value;
-        chatSocket.send(JSON.stringify({
-            'message': message
-        }));
+        chatSocket.onclose = function (e) {
+            console.error('Chat socket closed unexpectedly');
+        };
 
-        messageInputDom.value = '';
-    };
-</script>
-</html>
+        $('#chat-message-input').focus();
+        $('#chat-message-input').keyup(function (e) {
+            if (e.keyCode === 13) {  // enter, return
+                $('#chat-message-submit').click();
+            }
+        });
+
+        $('#chat-message-submit').click(function() {
+            //var messageInputDom = document.querySelector('#chat-message-input');
+            var message = $('#chat-message-input').val();
+            chatSocket.send(JSON.stringify({
+                'message': message
+            }));
+
+            $('#chat-message-input').val('');
+        });
+    </script>
+{% endblock %}

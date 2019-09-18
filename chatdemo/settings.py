@@ -119,7 +119,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ko-kr'
 
 TIME_ZONE = 'UTC'
 
@@ -134,3 +134,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static')
+]
+
+AUTH_USER_MODEL = 'auth.User'
+
+LOGIN_REDIRECT_URL = '/chat/'
+LOGOUT_REDIRECT_URL = '/chat/'
+
+
+DATETIME_FORMAT = "%H:%M"
