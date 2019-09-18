@@ -140,8 +140,7 @@ STATICFILES_DIRS = [
 
 AUTH_USER_MODEL = 'auth.User'
 
-LOGIN_REDIRECT_URL = '/chat/'
-LOGOUT_REDIRECT_URL = '/chat/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
 
-
-DATETIME_FORMAT = "%H:%M"
+DATETIME_FORMAT = "%H:%M" # chat/consumers.py

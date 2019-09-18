@@ -84,10 +84,10 @@
     <script type=text/javascript src="{% static 'reconnecting-websocket.min.js' %}"></script>
     <script>
         $('#all_messages').scrollTop($('#all_messages')[0].scrollHeight);
-        var roomName = '{{ room_name }}';
 
+        var roomPk = '{{ pk }}';    //view.py
         var ws_scheme = window.location.protocol === "https:" ? 'wss' : 'ws';
-        var websocket_str = ws_scheme + '://' + window.location.host + '/ws/chat/' + roomName + '/';
+        var websocket_str = ws_scheme + '://' + window.location.host + '/ws/'+roomPk+'/chat/';
         var chatSocket = new ReconnectingWebSocket(websocket_str);
 
         {#var chatSocket = new WebSocket(#}

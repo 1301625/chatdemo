@@ -11,9 +11,9 @@ import datetime
 
 class ChatConsumer(WebsocketConsumer):
     def connect(self):
-
-        self.room_name = self.scope['url_route']['kwargs']['room_name'] #chat/routing.py에 정의된 URL 파라미터에서 room_name을 얻습니다.
-        self.room_group_name = 'chat_%s' % self.room_name #사용자가 지정한 방 이름에서 직접 채널 그룹 이름을 구축합니다.
+        #self.room_name = self.scope['url_route']['kwargs']['pk'] #chat/routing.py에 정의된 URL 파라미터에서 room_name을 얻습니다.
+        #self.room_group_name = 'chat_%s' % self.room_name #사용자가 지정한 방 이름에서 직접 채널 그룹 이름을 구축합니다.
+        self.room_group_name = self.scope['url_route']['kwargs']['pk']
 
         #그룹에 join(결합)합니다.
         async_to_sync(self.channel_layer.group_add)(
@@ -35,8 +35,10 @@ class ChatConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
+
         message = text_data_json['message']
         user = str(self.scope['user'])
+        pk = self.scope['url_route']['kwargs']['pk']
         now_time = datetime.datetime.now().strftime(settings.DATETIME_FORMAT)
 
         if not message:
@@ -44,7 +46,7 @@ class ChatConsumer(WebsocketConsumer):
         if not self.scope['user'].is_authenticated:
             return
 
-        Message.objects.create(user=self.scope['user'], message=message)
+        Message.objects.create(user=self.scope['user'], message=message, post_id=pk)
 
         #그룹에게 이벤트를 보냅니다.
         async_to_sync(self.channel_layer.group_send)(
